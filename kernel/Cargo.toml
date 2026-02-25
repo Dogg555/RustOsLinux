@@ -7,9 +7,3 @@ edition.workspace = true
 bootloader = { path = "../bootloader" }
 ipc = { path = "../libs/ipc" }
 syscall = { path = "../libs/syscall" }
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
