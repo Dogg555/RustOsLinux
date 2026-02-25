@@ -1,295 +1,161 @@
 # RustOsLinux
 
-> **Memory safety. Modular power. Built with Rust.**
+RustOsLinux is a Rust-first microkernel project targeting x86_64 with a strict kernel/userspace split, VM-first validation, and milestone-driven delivery.
 
-RustOsLinux is an AI-assisted, Rust-native microkernel OS project focused on modular design, VM-first development, and long-term maintainability.
+## Project Definition
 
----
+- **Kernel type:** Microkernel
+- **Primary language:** Rust nightly (`#![no_std]` kernel path)
+- **Boot path:** UEFI bootloader handing off structured `BootInfo`
+- **Primary target:** `x86_64-rustos` custom target
+- **Primary execution environment:** QEMU first, bare metal later
+- **Development style:** phase-based implementation with CI-checkable milestones
 
-## 📌 Project Definition
+## Architecture Decision: Kernel vs Userspace Boundaries
 
-- **Name:** RustOsLinux
-- **Type:** Rust-based Microkernel Operating System
-- **Architecture:** x86_64 (initially)
-- **Boot Method:** UEFI
-- **Primary Dev Environment:** QEMU
-- **Language:** Rust (`#![no_std]`, nightly)
-- **Design Model:** Microkernel + Userspace Servers
-- **Development Strategy:** Modular AI-assisted generation
+### Kernel Owns
+- Low-level CPU initialization (GDT/IDT, interrupt gates, timer setup)
+- Virtual memory and frame allocation primitives
+- Scheduler and context switching
+- Syscall dispatch
+- Capability checks and IPC transport
 
----
+### Userspace Owns
+- Process manager policy and service orchestration
+- Filesystem services (RAMFS → FAT → RustFS)
+- Device/driver servers wherever feasible
+- Networking stack services
+- Shell/window manager/compositor/application runtime
 
-## 🧠 Architecture Decision
+This boundary is intentional: keep policy in userspace, mechanism in kernel.
 
-### Kernel Responsibilities
+## Repository Layout (Scaffold)
 
-- Scheduler
-- Memory management
-- Interrupt handling
-- IPC
-- Syscall interface
+- `bootloader/` — UEFI handoff crate and boot contract (`BootInfo`)
+- `kernel/` — no_std kernel entry and core initialization stages
+- `libs/ipc/` — shared IPC message schema
+- `libs/syscall/` — syscall numbers and ABI constants
+- `userspace/init/` — initial userspace process manager placeholder
+- `userspace/fs-server/` — filesystem server placeholder
+- `userspace/net-server/` — networking server placeholder
+- `targets/x86_64-rustos.json` — custom Rust target
+- `.cargo/config.toml` — target + build-std configuration
+- `scripts/` — build/run/debug helper scripts
+- `config/kernel.ld` — initial linker script
+- `docs/ROADMAP.md` — execution and delivery checklist anchor
 
-### Userspace Responsibilities
+## Environment & Toolchain Setup
 
-- Filesystem
-- Drivers
-- Networking
-- Window system
-- Shell
-- Applications
+1. Install prerequisites:
+   - Rustup + nightly toolchain
+   - `rust-src`, `llvm-tools-preview`, `rustfmt`, `clippy`
+   - QEMU (`qemu-system-x86_64`)
+   - GDB (`rust-gdb` preferred)
+2. Use bundled toolchain config:
+   - `rust-toolchain.toml` pins nightly + components.
+3. Verify workspace resolves:
+   - `cargo metadata --no-deps`
+4. Build early scaffold:
+   - `scripts/build.sh`
+5. Run kernel stub in VM:
+   - `scripts/run-qemu.sh target/x86_64-rustos/debug/kernel`
 
----
-
-## 🚀 Full Development Execution Plan
-
-### Phase 0 — Environment Setup
-
-1. **Install toolchain**
-   - Rust nightly
-   - `rust-src`
-   - LLVM tools
-   - QEMU
-   - GDB
-2. **Create workspace**
-   - Cargo workspace setup
-   - Root `Cargo.toml`
-   - Custom target JSON (`rustoslinux.json`)
-   - `.cargo/config.toml`
-   - Panic strategy `abort`
-3. **Setup build system**
-   - `Makefile`
-   - Build script
-   - QEMU launch script
-   - Debug script
-
-### Phase 1 — Bootloader (Goal: boot into Rust kernel)
+## Bootloader and Kernel Boot Sub-Steps
 
 1. **UEFI entry**
-   - Create `bootloader` crate
-   - Implement UEFI main entry
-   - Disable `std`
-   - Configure linker script
+   - Initialize UEFI services and console fallback.
 2. **Framebuffer setup**
-   - Detect GOP
-   - Initialize framebuffer
-   - Basic pixel drawing
-   - Simple text renderer
-3. **Memory map extraction**
-   - Retrieve UEFI memory map
-   - Store physical memory regions
-   - Pass map to kernel
-4. **Kernel loading**
-   - Load kernel ELF from disk
-   - Parse ELF headers
-   - Map segments
-   - Jump to kernel entry
+   - Locate GOP mode, map framebuffer, pass to kernel via `BootInfo`.
+3. **Memory map handoff**
+   - Capture UEFI memory descriptors, normalize regions, pass pointer + length.
+4. **ELF load + jump**
+   - Parse kernel ELF, map loadable segments, switch to kernel entry.
+5. **Kernel early init**
+   - Validate `BootInfo`, bring up IDT/GDT, initialize allocator primitives.
 
-### Phase 2 — Kernel Initialization (Goal: kernel runs and prints)
+## Execution Plan (Phase 0–12)
 
-1. **Kernel entry**
-   - Implement `_start`
-   - Setup stack
-   - Clear BSS
-   - Initialize logger
-2. **GDT setup**
-   - Create/load GDT
-   - Setup kernel code/data segments
-3. **IDT setup**
-   - Create/load IDT
-   - Install exception handlers
-4. **Interrupt testing**
-   - Trigger breakpoint interrupt
-   - Verify handler execution
+### Phase 0 — Project Bootstrap
+- Toolchain, target JSON, cargo config, scripts, workspace skeleton.
+- **Exit criteria:** reproducible build environment and working scaffold scripts.
 
-### Phase 3 — Memory Management (Goal: safe memory allocation)
+### Phase 1 — Bootloader Path
+- UEFI app entry, framebuffer capture, memory map extraction, ELF kernel load.
+- **Exit criteria:** kernel entry reached from bootloader under QEMU.
 
-1. **Physical frame allocator**
-   - Parse boot memory map
-   - Identify usable regions
-   - Implement frame allocation
-2. **Paging**
-   - Setup PML4
-   - Map higher-half kernel
-   - Identity-map required memory
-   - Enable paging
-3. **Heap allocator**
-   - Define heap region
-   - Implement global allocator
-   - Verify `alloc`
-4. **Page fault handler**
-   - Log fault address
-   - Prevent silent crashes
+### Phase 2 — Kernel Bring-up
+- `_start`, panic path, serial/framebuffer logging, GDT/IDT + exception handlers.
+- **Exit criteria:** deterministic early logs and exception smoke checks.
 
-### Phase 4 — Timer & Scheduler (Goal: run multiple tasks)
+### Phase 3 — Memory Management
+- Physical frame allocator, paging policy, heap allocator, page-fault diagnostics.
+- **Exit criteria:** dynamic memory and stable page fault reporting.
 
-1. **Timer interrupt**
-   - Configure PIT or APIC timer
-   - Register handler
-   - Increment system tick
-2. **Task structure**
-   - Define task struct
-   - Track stack pointer
-   - Track register state
-3. **Context switching**
-   - Save registers
-   - Switch stack
-   - Restore registers
-4. **Round-robin scheduler**
-   - Run queue
-   - Tick-based task rotation
-   - Validate multitasking
+### Phase 4 — Timer + Scheduler
+- Timer IRQ, task model, context switch, round-robin baseline.
+- **Exit criteria:** multiple runnable tasks rotate on timer ticks.
 
-### Phase 5 — Process Model (Goal: userspace processes exist)
+### Phase 5 — Process Model
+- PID/address space structures, userspace ELF loader, ring transition.
+- **Exit criteria:** first userspace process executes with controlled syscalls.
 
-1. **Process structure**
-   - PID
-   - Address space
-   - Capability table
-   - State enum
-2. **ELF loader**
-   - Parse ELF binaries
-   - Map sections
-   - Setup userspace stack
-   - Set entry point
-3. **Ring transition**
-   - Setup user segments
-   - Configure syscall entry
-   - Enter ring 3 safely
+### Phase 6 — IPC
+- Message schema, channels, blocking receive, capability-gated send/recv.
+- **Exit criteria:** reliable request/response between processes.
 
-### Phase 6 — IPC System (Goal: message-based communication)
-
-1. **Message format**
-   - Header
-   - Payload
-   - Sender ID
-   - Capability references
-2. **Channels**
-   - Channel abstraction
-   - Send/receive
-   - Blocking receive when empty
-3. **Capability model**
-   - Define capability tokens
-   - Validate access rights
-   - Enforce isolation
-
-### Phase 7 — System Servers (Goal: move functionality out of kernel)
-
-1. **Process server**
-   - Lifecycle management
-   - Program spawning
-   - Exit handling
-2. **Filesystem server**
-   - RAMFS implementation
-   - IPC file API
-3. **Driver server**
-   - Userspace drivers
-   - IPC communication with kernel
+### Phase 7 — Core Servers
+- Process manager, FS server baseline, driver-server communication model.
+- **Exit criteria:** userspace services launched and discoverable.
 
 ### Phase 8 — Filesystem
+- RAMFS first, FAT read support next, RustFS design after stability.
+- **Exit criteria:** file open/read/write flow through FS server IPC.
 
-- **Stage 1: RAMFS**
-  - In-memory FS
-  - Directory support
-  - Read/write support
-- **Stage 2: FAT support**
-  - Parse FAT structures
-  - Mount disk image
-  - Read files
-- **Stage 3: RustFS**
-  - Rust-native filesystem design
-  - Journaling
-  - Capability-based access
+### Phase 9 — Networking
+- Ethernet framing, IPv4 basics, UDP/TCP minimum viability.
+- **Exit criteria:** packet send/receive in VM networking mode.
 
-### Phase 9 — Network Stack
-
-1. **Ethernet layer**
-   - Packet parsing
-   - MAC handling
-2. **IP layer**
-   - IPv4 parsing
-   - Routing table
-3. **TCP/UDP layer**
-   - Basic TCP handshake
-   - UDP packet handling
-
-### Phase 10 — UI System
-
-1. **Framebuffer abstraction**
-   - Drawing primitives
-   - Double buffering
-2. **Compositor**
-   - Window surfaces
-   - Z-order handling
-3. **Window manager**
-   - Input routing
-   - Window lifecycle
-4. **Shell**
-   - Command interpreter
-   - Process spawning
+### Phase 10 — UI Stack
+- Framebuffer abstraction, compositor, window manager, shell UX path.
+- **Exit criteria:** basic windowed output + input routing.
 
 ### Phase 11 — Security Model
+- Capability enforcement, memory isolation hardening, syscall validation.
+- **Exit criteria:** unauthorized access attempts are denied and logged.
 
-- Capability-based permissions
-- Process isolation
-- Memory region enforcement
-- Secure IPC validation
+### Phase 12 — Debugging + Stability
+- Structured logging, serial diagnostics, leak/deadlock detection hooks.
+- **Exit criteria:** regression suite + debugging workflow for core subsystems.
 
-### Phase 12 — Debugging & Stability
+## Initial Success Criteria (Beyond “It Boots”)
 
-- Kernel logging
-- Serial debugging
-- Panic handler improvements
-- Memory leak detection
-- Deadlock detection
+RustOsLinux Phase-complete baseline requires:
+- Boot to kernel in QEMU
+- Framebuffer or serial output from kernel initialization
+- Timer interrupts firing predictably
+- Multi-task scheduling observed
+- Spawn of at least one userspace server (`init` + one service)
+- Working IPC exchange between two processes
 
----
+## AI Usage Guidelines
 
-## 🎯 Initial Success Criteria
+When using AI-assisted generation:
+- Generate one subsystem per change.
+- Always include explicit interface contracts first.
+- Prefer small, reviewable commits over broad speculative codegen.
+- Require phase-linked acceptance criteria in PR descriptions.
+- Reject generated code that mixes policy into kernel mechanism layers.
 
-RustOsLinux should be able to:
+## Known Hard Problems
 
-- Boot in QEMU
-- Print to framebuffer
-- Handle timer interrupts
-- Run multiple scheduled tasks
-- Spawn a userspace server
-- Communicate via IPC
+- Page-table correctness and higher-half mapping faults
+- Interrupt race conditions and lock ordering bugs
+- Context-switch ABI breakage
+- Capability lifecycle correctness (revocation, duplication)
+- Userspace driver isolation/performance tradeoffs
+- Multi-core scheduler correctness and fairness under contention
+- Kernel observability during early boot and triple-fault scenarios
 
----
+## Long-Term Objective
 
-## 🧭 Long-Term Objective
-
-RustOsLinux evolves into a:
-
-- Fully modular
-- VM-compatible
-- Memory-safe
-- Capability-secured
-- Graphical
-- Network-enabled
-- Fully Rust-native OS
-
----
-
-## 🤖 AI Usage Guidelines
-
-For AI-assisted development (Codex and related tools):
-
-- Generate one subsystem at a time
-- Keep modules isolated
-- Define clear interfaces up front
-- Avoid cross-module coupling
-- Write testable units
-- Document every kernel interface
-
----
-
-## ⚠️ Known Hard Problems
-
-- Memory management bugs
-- Page table misconfiguration
-- Triple faults
-- Context switching correctness
-- Hardware driver complexity
-- SMP race conditions
-- Kernel debugging visibility
+Deliver a memory-safe, capability-secured, modular Rust microkernel OS with practical userspace services, VM-first developer workflow, and a path to real hardware support.

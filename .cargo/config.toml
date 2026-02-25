@@ -1,0 +1,9 @@
+[build]
+target = "targets/x86_64-rustos.json"
+
+[target.'cfg(target_os = "none")']
+runner = "scripts/run-qemu.sh"
+
+[unstable]
+build-std = ["core", "alloc", "compiler_builtins"]
+build-std-features = ["compiler-builtins-mem"]

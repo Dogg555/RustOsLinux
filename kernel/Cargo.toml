@@ -1,0 +1,15 @@
+[package]
+name = "kernel"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bootloader = { path = "../bootloader" }
+ipc = { path = "../libs/ipc" }
+syscall = { path = "../libs/syscall" }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

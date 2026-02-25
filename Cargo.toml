@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+  "bootloader",
+  "kernel",
+  "libs/ipc",
+  "libs/syscall",
+  "userspace/init",
+  "userspace/fs-server",
+  "userspace/net-server",
+]
+
+[workspace.package]
+edition = "2021"
+authors = ["RustOsLinux Contributors"]
+license = "MIT"
+version = "0.1.0"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
