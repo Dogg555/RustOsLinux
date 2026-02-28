@@ -1,0 +1,8 @@
+[build]
+target = "i686-rustos.json"
+
+[unstable]
+build-std = ["core", "alloc", "compiler_builtins"]
+
+[target.i686-rustos]
+runner = "../scripts/run-rustos.sh"
