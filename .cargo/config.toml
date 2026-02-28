@@ -1,5 +1,5 @@
 [build]
-target = "targets/x86_64-rustos.json"
+target = "x86_64-unknown-none"
 
-[target.'cfg(target_os = "none")']
-runner = "scripts/run-qemu.sh"
+[target.x86_64-unknown-none]
+rustflags = ["-C", "link-arg=-Tconfig/kernel.ld"]
