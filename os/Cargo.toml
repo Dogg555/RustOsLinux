@@ -1,0 +1,11 @@
+[package]
+name = "os-builder"
+version = "0.1.0"
+edition = "2021"
+default-run = "os-builder"
+
+[workspace]
+members = ["kernel"]
+
+[dependencies]
+anyhow = "1"
