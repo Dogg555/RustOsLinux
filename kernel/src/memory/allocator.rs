@@ -4,7 +4,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 const HEAP_SIZE: usize = 1024 * 1024;
 
-#[repr(align(4096))]
+#[repr(align(16))]
 struct AlignedHeap([u8; HEAP_SIZE]);
 
 static mut HEAP: AlignedHeap = AlignedHeap([0; HEAP_SIZE]);
@@ -14,11 +14,7 @@ static LAST_ALLOC_ERROR_ALIGN: AtomicUsize = AtomicUsize::new(0);
 
 pub struct BumpAllocator;
 
-#[cfg(not(test))]
 #[global_allocator]
-static GLOBAL_ALLOCATOR: BumpAllocator = BumpAllocator;
-
-#[cfg(test)]
 static GLOBAL_ALLOCATOR: BumpAllocator = BumpAllocator;
 
 pub fn init() {
