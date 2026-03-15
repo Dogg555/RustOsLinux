@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-KERNEL_BIN=${1:-target/x86_64-rustos/debug/kernel}
+KERNEL_BIN=${1:-target/x86_64-unknown-none/debug/kernel}
 qemu-system-x86_64 \
   -machine q35 \
   -cpu qemu64 \
