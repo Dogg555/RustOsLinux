@@ -48,6 +48,7 @@ This boundary is intentional: keep policy in userspace, mechanism in kernel.
 
 1. Install prerequisites:
    - Rustup + nightly toolchain
+   - Python 3 (available by default in dev images/VM templates)
    - `rust-src`, `llvm-tools-preview`, `rustfmt`, `clippy`
    - QEMU (`qemu-system-x86_64`)
    - GDB (`rust-gdb` preferred)
@@ -59,6 +60,28 @@ This boundary is intentional: keep policy in userspace, mechanism in kernel.
    - `scripts/build.sh`
 5. Run kernel stub in VM:
    - `scripts/run-qemu.sh target/x86_64-rustos/debug/kernel`
+6. Bootstrap developer environment (Python + Rust + package-manager deps):
+   - `scripts/bootstrap-dev-env.sh -y`
+7. Validate environment:
+   - `scripts/check-dev-env.sh`
+
+### Developer Experience Baseline
+
+To support systems programming and userspace service development from day one,
+the project baseline includes:
+
+- **Rust + Python available by default** in standard development environments
+  (local bootstrap scripts, CI images, and VM/devcontainer templates).
+- **A full terminal environment with package manager access** so developers can
+  install additional tools as needed (`apt`, `dnf`, `pacman`, `brew`, etc.,
+  depending on host platform).
+
+This is required for faster subsystem iteration across IPC, servers,
+networking, and diagnostics phases. The repository now includes:
+
+- `scripts/bootstrap-dev-env.sh` for host provisioning across common package
+  managers.
+- `scripts/check-dev-env.sh` for a quick readiness check.
 
 ## Bootloader and Kernel Boot Sub-Steps
 
