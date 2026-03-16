@@ -14,7 +14,13 @@ struct IdtEntry {
 
 impl IdtEntry {
     const fn missing() -> Self {
-        Self { offset_low: 0, selector: 0, zero: 0, flags: 0, offset_high: 0 }
+        Self {
+            offset_low: 0,
+            selector: 0,
+            zero: 0,
+            flags: 0,
+            offset_high: 0,
+        }
     }
 
     fn new(handler: usize, flags: u8) -> Self {

@@ -1,11 +1,12 @@
 use core::arch::asm;
 
 use crate::drivers::{keyboard, pic};
-use crate::timer;
+use crate::{scheduler, timer};
 
 #[no_mangle]
 pub extern "x86-interrupt" fn timer_interrupt() {
     timer::tick();
+    let _ = scheduler::tick();
     pic::end_of_interrupt(0);
 }
 

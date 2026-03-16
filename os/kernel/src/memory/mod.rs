@@ -24,7 +24,11 @@ pub fn init(multiboot_info_addr: usize) {
     if let Some(map) = boot_info.memory_map_tag() {
         for area in map.memory_areas() {
             if area.typ() == MemoryAreaType::Available {
-                println!("  avail {:08x}-{:08x}", area.start_address(), area.end_address());
+                println!(
+                    "  avail {:08x}-{:08x}",
+                    area.start_address(),
+                    area.end_address()
+                );
             }
         }
     }
