@@ -19,7 +19,14 @@ struct GdtEntry {
 
 impl GdtEntry {
     const fn empty() -> Self {
-        Self { limit_low: 0, base_low: 0, base_mid: 0, access: 0, granularity: 0, base_high: 0 }
+        Self {
+            limit_low: 0,
+            base_low: 0,
+            base_mid: 0,
+            access: 0,
+            granularity: 0,
+            base_high: 0,
+        }
     }
 
     const fn new(base: u32, limit: u32, access: u8, granularity: u8) -> Self {
